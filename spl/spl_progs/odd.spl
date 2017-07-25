@@ -1,0 +1,15 @@
+alias counter S0;
+alias n S1;
+counter= 0;
+
+print "Enter a number below which all odd numbers are printed \n";
+read n;
+
+
+while(counter<=n) do
+	if(counter%2==1) then
+		print counter;
+	endif;
+	counter= counter+1;
+endwhile;
+	

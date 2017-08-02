@@ -1,0 +1,31 @@
+decl
+integer n;
+enddecl
+
+integer main(){
+	read(n);
+	integer a[n];
+	integer i,j;
+	j=0;
+	while(j<n)
+		a[j]=0;
+	i=2;
+	if(n<=2)
+		return 0;
+	else
+		while(i<n) do
+			if(a[i]==0) then
+				print(i);
+			else
+				integer k=i*2;
+				while(k<n) do
+					a[k]=1;
+					k+=i;
+				endwhile;
+			endif;
+	endif;
+return 0;
+}						
+			
+		
+

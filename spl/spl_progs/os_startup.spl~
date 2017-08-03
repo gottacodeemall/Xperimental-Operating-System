@@ -5,9 +5,7 @@ load(8,2);
 //load interrupt 7
 load(23,17);
 load(24,18);
-//load interrupt 1
-load(11,5);
-load(12,6);
+
 
 [READY_LIST+0]=0;
 
@@ -29,8 +27,31 @@ PTLR = 4;
 [PTBR + 7] = "01";
 [READY_LIST + 1] = 2;
 breakpoint;
+//logical page number 3 for stack
 SP = 3 * 512;
+//putting the value of IP on top of stack of INIT process page 28
 [28 * 512] = 0;
 breakpoint;
+//load interrupt 1
+load(11,5);
+load(12,6);
+//load timer
+load(9,3);
+load(10,4);
+
+//PROCESS 2
+[READY_LIST+32]=1;
+load(29,27);
+alias PTBR_Process1 S0;
+PTBR_Process1=1024+8*1;
+[PTBR_Process1+0]=29
+
+
+
+
+
+
+
+
 ireturn;
 

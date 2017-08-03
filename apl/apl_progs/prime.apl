@@ -4,6 +4,7 @@ integer a[100];
 enddecl
 
 integer main(){
+	breakpoint;
 	read(n);
 	integer i,j;
 	j=0;

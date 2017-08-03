@@ -19,7 +19,6 @@ integer main(){
 		while(i<n) do
 			if(a[i]==0) then
 				print(i);
-			else
 				k=i*2;
 				while(k<n) do
 					a[k]=1;

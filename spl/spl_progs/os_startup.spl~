@@ -5,7 +5,9 @@ load(8,2);
 //load interrupt 7
 load(23,17);
 load(24,18);
-
+//load interrupt 1
+load(11,5);
+load(12,6);
 
 [READY_LIST+0]=0;
 
@@ -30,12 +32,5 @@ breakpoint;
 SP = 3 * 512;
 [28 * 512] = 0;
 breakpoint;
-//load interrupt 1
-load(11,5);
-load(12,6);
-//load timer
-load(9,3);
-load(10,4);
-
 ireturn;
 

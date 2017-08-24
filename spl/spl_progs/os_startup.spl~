@@ -6,7 +6,10 @@ load(8,2);
 load(23,17);
 load(24,18);
 
-
+//load FAT
+load(19,5);
+//load dfl
+load(20,6);
 [READY_LIST+0]=0;
 
 //load init
@@ -14,7 +17,7 @@ load(25,21);
 load(26,22);
 load(27,23);
 
-//setting page_table PTBR 
+//setting page_table PTBR which point to page table used for add translation
 PTBR = 1024;
 PTLR = 4;
 [PTBR + 0] = 25;
@@ -35,23 +38,6 @@ breakpoint;
 //load interrupt 1
 load(11,5);
 load(12,6);
-//load timer
-load(9,3);
-load(10,4);
-
-//PROCESS 2
-[READY_LIST+32]=1;
-load(29,27);
-alias PTBR_Process1 S0;
-PTBR_Process1=1024+8*1;
-[PTBR_Process1+0]=29
-
-
-
-
-
-
-
 
 ireturn;
 

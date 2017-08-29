@@ -1,0 +1,119 @@
+alias physicalSP S0;
+physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+
+alias syscallno S1;
+syscallno = [physicalSP-1];
+
+alias filename S2;
+filename = [physicalSP-3];
+
+	alias counter S4;
+	alias fatindex S5;
+	alias filetableindex S6;
+	alias Pid S7;
+	Pid =  (PTBR-1024)/8;
+	alias curPCB S8;
+	curPCB=READY_LIST+32*Pid;
+	alias perprocessfiletableindex S9;
+	
+if(syscallno==2) then
+	
+	counter = 0;
+	breakpoint;
+	
+	while(counter<512) do
+		if([FAT+counter]==filename) then
+			break;
+		endif;
+		counter= counter+8;
+	endwhile;
+	
+	breakpoint;
+	
+	if(counter==64) then
+		print "not created";
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	fatindex = counter;
+	
+	counter = 0;
+	while(counter < 128) do
+		if([FILE_TABLE+counter]==fatindex) then
+			filetableindex=counter;
+			break;
+		endif;
+		counter= counter+2;
+	endwhile;
+	
+	breakpoint;
+	
+	if(counter == 128) then	
+		counter=0;
+		while(counter < 128) do
+			if([FILE_TABLE+counter]==-1) then
+				filetableindex=counter;
+				break;
+			endif;
+			counter=counter + 2;
+		endwhile;
+		if(counter==128) then
+			print "systable full";
+			[physicalSP-2]=-1;
+			ireturn;
+		endif;
+	endif;
+	
+	breakpoint;
+	
+	counter=15;
+	while(counter<=30) do
+		if([curPCB+counter]==-1) then
+			perprocessfiletableindex=counter;
+			break;
+		endif;			
+		counter=counter +2;
+	endwhile;
+	if(counter==31) then
+		print "PCB full";
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;	
+	
+	breakpoint;
+	
+	[curPCB+perprocessfiletableindex]=filetableindex;
+	[FILE_TABLE+filetableindex]=fatindex;
+	[FILE_TABLE+filetableindex+1]=[FILE_TABLE+filetableindex+1]+1;
+	breakpoint;
+	
+	print "file opened";
+	[physicalSP-2]=(perprocessfiletableindex-15)/2;
+	ireturn;
+else
+	if(syscallno==3) then
+		if(filename>=0 && filename<=7) then
+			filename=(2*filename)+15;
+			if([curPCB+filename]==-1) then
+				print "PCB -1";
+				[physicalSP-2]=-1;
+				ireturn;
+			endif;
+			filetableindex=[curPCB+filename];
+			[FILE_TABLE+filetableindex+1]=[FILE_TABLE+filetableindex+1]-1;
+			if([FILE_TABLE+filetableindex+1]==0) then
+				[FILE_TABLE+filetableindex]=-1;
+			endif;
+			
+			[curPCB+filename]=-1;
+			[curPCB+filename]=0;
+			print "file closed";
+			[physicalSP-2]=0;
+			ireturn;	
+		else
+			print "invalid file descriptor";
+			[physicalSP-2]=-1;
+			ireturn;
+		endif;		
+	endif;			
+endif;										

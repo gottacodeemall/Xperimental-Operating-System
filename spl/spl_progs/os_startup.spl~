@@ -7,9 +7,9 @@ load(23,17);
 load(24,18);
 
 //load FAT
-load(19,5);
+load(5,19);
 //load dfl
-load(20,6);
+load(6,20);
 [READY_LIST+0]=0;
 
 //load init
@@ -39,5 +39,28 @@ breakpoint;
 load(11,5);
 load(12,6);
 
+
+//setting system wide open file table
+
+alias counter S0;
+counter = 0;
+while(counter<128) do
+	[FILE_TABLE+counter]=-1;
+	[FILE_TABLE+counter+1]=0;
+	counter =  counter + 2;
+endwhile;
+
+//setting PCB of INIT
+
+counter=15;
+while(counter<=30) do
+	[READY_LIST+counter]=-1;
+	[READY_LIST+counter+1]=0;
+	counter = counter + 2;
+endwhile;
+
+	
+			
+	
 ireturn;
 

@@ -1,0 +1,157 @@
+alias physicalSP S0;
+physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+
+alias syscallno S1;
+syscallno = [physicalSP-1];
+alias filename S2;
+filename =  [physicalSP-3];
+alias counter S3;
+alias check S4;
+alias i S5;
+alias fatindex S6;
+alias filetableindex S7;
+alias basicblockindex S8;
+alias datablockindex S9;
+
+if(syscallno == 1) then
+	print filename;
+	counter=0;
+	check=0;
+	while(counter<64) do
+		if([FAT+8*counter]==filename) then
+			check=1;
+			break;
+		endif;
+		counter=counter+1;
+	endwhile;
+	if(check==1) then
+		print "already exists";
+		[physicalSP-2]=0;
+		ireturn;
+	else
+		print "created";
+		counter=0;
+		while(counter<64) do
+			if([FAT+8*counter]==-1) then
+				break;
+			endif;
+		counter=counter+1;
+		endwhile;
+		print counter;		
+		if(counter==64) then
+			print "FAT is full";
+			[physicalSP-2]=-1;
+			ireturn;
+		endif;	
+	
+		i=20;
+		while(i<448) do
+			if([DISK_LIST+i]==0) then
+				break;
+			endif;
+			i=i+1;
+		endwhile;
+		if(i==448) then
+			print "~ space for bb";
+			[physicalSP-2]=-1;
+			ireturn;
+		endif;			
+		i=20;
+		while(i<448) do
+			if([DISK_LIST+i]==0) then
+				break;
+			endif;
+			i=i+1;
+		endwhile;
+		if(i==448) then
+			print "~ space for db";
+			[physicalSP-2]=-1;
+			ireturn;
+		endif;
+		[FAT+8*counter+0]=filename;
+		[FAT+8*counter+1]=0;
+		[FAT+8*counter+2]=i;
+		[DISK_LIST+i]=1; //basic block update 
+		print "bb number";
+		print i;	
+		print "db number";
+		print i;	
+		// load the data block of disk onto startupcode of memory as os startup has already been executed
+		load(1,i);
+		counter=0;
+		while(counter<512) do
+			[SCRATCHPAD+counter]=-1;
+			counter=counter+1;
+		endwhile;
+		print "db updated";
+		store(1,i);
+		[DISK_LIST+i]=1;
+		store(5,19);
+		store(6,20);
+	endif;
+	print "success";
+	[physicalSP-2]=0;
+	ireturn;
+else
+	if(syscallno==4) then
+		counter=0;
+		while(counter<512) do
+			if([FAT+counter]==filename) then
+				fatindex=counter;
+				break;
+			endif;
+			counter=counter + 8;
+		endwhile;
+	if(counter==512) then
+		print "file not created";
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	counter=0;
+	while(counter<128) do
+		if([FILE_TABLE+counter]==fatindex) then
+			filetableindex=counter;
+			break;
+		endif;
+		counter=counter+2;
+	endwhile;
+	
+	if(counter==128) then
+		print "unopened";
+	endif;
+	print [FILE_TABLE+counter+1]; 
+	if([FILE_TABLE+counter+1]!=0) then
+		print "close before delete";
+		[physicalSP-2]=-1;	
+		ireturn;
+	endif;
+	
+	basicblockindex=[FAT+fatindex+2];
+	counter=0;
+	while(counter<256) do
+		load(1,basicblockindex);
+		datablockindex=[SCRATCHPAD+counter];
+		[SCRATCHPAD+counter]="";
+		store(1,basicblockindex);
+		load(1,datablockindex);
+		check=0;
+		while(check<512) do
+			[SCRATCHPAD+check]="";
+			check=check+1;
+		endwhile;
+		store(1,datablockindex);
+		counter=counter+1;
+	endwhile;	
+	
+	[DISK_LIST+basicblockindex]=0;
+	[FAT+fatindex]=-1;
+	[FAT+fatindex+1]=0;
+	[FAT+fatindex+2]=-1;
+	
+	print "delete success";
+	[physicalSP-2]=0;
+	ireturn;
+	endif;							
+endif;
+			
+		

@@ -1,0 +1,82 @@
+alias physicalSP S0;
+physicalSP = [PTBR+2*(SP/512)]*512+SP%512;
+alias filename S6;
+filename = [physicalSP-4];
+alias word S7;
+word = [physicalSP-3];
+alias syscallno S8;
+syscallno = [physicalSP-1];
+alias Pid S1;
+Pid= (PTBR-1024)/8;
+alias curPCB S2;
+curPCB=READY_LIST+32*Pid;
+alias counter S3;
+alias filetableindex S4;
+alias fatindex S5;
+alias basicblocknumber S9;
+alias datablocknumber S10;
+alias lseek S11;
+alias bbindex S12;
+alias temp S13;
+
+if(syscallno==5) then
+	if(filename>=0 && filename<=7) then
+		filename=2*filename + 15;
+		if([curPCB+filename]==-1) then
+			print "PCB fault";
+			[physicalSP-2]=-1;
+			ireturn;
+		else
+			filetableindex=[curPCB+filename];
+			lseek=[curPCB+filename+1];
+			if([filetableindex+FILE_TABLE]==-1) then
+				print "file table error";
+				[physicalSP-2]=-1;
+				ireturn;
+			else
+				fatindex=[filetableindex+FILE_TABLE];
+				if([FAT+fatindex]==-1) then
+					print "FAT table error";
+					[physicalSP-2]=-1;
+					ireturn;
+				endif;
+				basicblocknumber=[FAT+fatindex+2];
+				bbindex=lseek/512;
+				load(1,basicblocknumber);
+				if([SCRATCHPAD+bbindex]==""||[SCRATCHPAD+bbindex]==-1) then
+					counter=20;
+					while(counter<448) do
+						if([DISK_LIST+counter]==0) then
+							break;
+						endif;
+						counter = counter + 1;
+					endwhile;
+					if(counter==448) then
+						print "DISK not free";
+						[physicalSP-2]=-1;
+						ireturn;	
+					endif;
+					temp=counter;
+					[SCRATCHPAD+bbindex]=temp;
+					[FAT+fatindex+1]=[FAT+fatindex+1]+512;	
+					[DISK_LIST+temp]=1;				
+				endif;
+				temp=[SCRATCHPAD+bbindex];
+				store(1,basicblocknumber);
+				load(1,temp);
+				counter=lseek%512;
+				[SCRATCHPAD+counter]=word;
+				store(1,temp);
+				[curPCB+filename+1]=[curPCB+filename+1] +1;		
+				
+				print "write success";
+				[physicalSP-2]=0;
+				ireturn;
+			endif;		
+		endif;	
+	else
+		print "inval filedec";
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+endif;		

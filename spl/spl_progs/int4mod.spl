@@ -18,6 +18,8 @@ alias datablocknumber S10;
 alias lseek S11;
 alias bbindex S12;
 alias temp S13;
+alias dbno S14;
+alias seek S15;
 
 if(syscallno==5) then
 	if(filename>=0 && filename<=7) then
@@ -26,14 +28,14 @@ if(syscallno==5) then
 			print "PCB fault";
 			[physicalSP-2]=-1;
 			ireturn;
-		else
+		endif;
 			filetableindex=[curPCB+filename];
 			lseek=[curPCB+filename+1];
 			if([filetableindex+FILE_TABLE]==-1) then
 				print "file table error";
 				[physicalSP-2]=-1;
 				ireturn;
-			else
+			endif;
 				fatindex=[filetableindex+FILE_TABLE];
 				if([FAT+fatindex]==-1) then
 					print "FAT table error";
@@ -41,9 +43,64 @@ if(syscallno==5) then
 					ireturn;
 				endif;
 				basicblocknumber=[FAT+fatindex+2];
-				bbindex=lseek/512;
+				
+				
+				counter=0;
 				load(1,basicblocknumber);
-				if([SCRATCHPAD+bbindex]==""||[SCRATCHPAD+bbindex]==-1) then
+				while(counter<256) do
+					if([SCRATCHPAD+counter]==-1) then
+						break;
+					endif;
+					counter=counter+1;
+				endwhile;
+				counter=counter-1;
+				if(counter<0) then
+					print "basic alloc";
+					counter=20;
+					while(counter<448) do
+						if([DISK_LIST+counter]==0) then
+							break;
+						endif;
+						counter = counter + 1;
+					endwhile;
+					if(counter==448) then
+						print "DISK not free";
+						[physicalSP-2]=-1;
+						ireturn;	
+					endif;
+					temp=counter;
+					[SCRATCHPAD]=temp;
+					[FAT+fatindex+1]=[FAT+fatindex+1]+512;
+					[DISK_LIST+temp]=1;
+					counter=0;		
+				endif;
+				dbno=[SCRATCHPAD+counter];
+				store(1,basicblocknumber);
+				load(1,dbno);
+				counter=0;
+				while(counter<512) do
+					if([SCRATCHPAD+counter]==-1||[SCRATCHPAD+counter]=="") then
+						seek=counter;
+						break;
+					endif;
+					counter=counter+1;
+				endwhile;
+				if(counter==512) then
+					print "new db alloc";
+					counter=0;
+					load(1,basicblocknumber);
+					while(counter<256) do
+						if([SCRATCHPAD+counter]==-1) then
+							break;
+						endif;
+						counter=counter+1;
+					endwhile;
+					if(counter==256) then
+						print "~ basic block";
+						[physicalSP-2]=-1;
+						ireturn;
+					endif;
+					bbindex=counter;
 					counter=20;
 					while(counter<448) do
 						if([DISK_LIST+counter]==0) then
@@ -59,22 +116,21 @@ if(syscallno==5) then
 					temp=counter;
 					[SCRATCHPAD+bbindex]=temp;
 					[FAT+fatindex+1]=[FAT+fatindex+1]+512;	
-					[DISK_LIST+temp]=1;				
+					[DISK_LIST+temp]=1;		
+					store(1,basicblocknumber);	
+					load(1,counter);
+					dbno=temp;
+					seek=0;
 				endif;
-				temp=[SCRATCHPAD+bbindex];
-				store(1,basicblocknumber);
-				load(1,temp);
-				counter=lseek%512;
-				[SCRATCHPAD+counter]=word;
-				store(1,temp);
-				[curPCB+filename+1]=[curPCB+filename+1] +1;		
+				[SCRATCHPAD+seek]=word;
+				store(1,dbno);
 				store(5,19);
 				store(6,20);
-				print "write success";
+				print dbno;
+				print seek;
+				print "success";
 				[physicalSP-2]=0;
 				ireturn;
-			endif;		
-		endif;	
 	else
 		print "inval filedec";
 		[physicalSP-2]=-1;

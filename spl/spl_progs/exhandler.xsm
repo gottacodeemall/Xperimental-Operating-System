@@ -1,3 +1,5 @@
 START
+MOV T0,  "excep halt"
+OUT T0
 HALT
 HALT

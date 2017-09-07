@@ -1,0 +1,163 @@
+alias counter S0;
+alias physicalSP S1;
+physicalSP=[PTBR+2*(SP/512)]*512+SP%512;
+alias syscallno S2;
+syscallno=[physicalSP-1];
+alias curPID S3;
+alias filename S4;
+filename=[physicalSP-3];
+curPID=(PTBR-1024)/8;
+alias curPCB S5;
+curPCB=READY_LIST+32*curPID;
+alias bbno S6;
+alias count1 S7;
+alias count2 S8;
+alias count3 S9;
+alias count S10;
+alias dbno S11;
+alias filetableindex S12;
+alias stacknumber S13;
+
+if(syscallno==9) then
+
+	//search for file
+	
+	counter=0;
+	while(counter<64) do
+		if([FAT+8*counter]==filename) then
+			bbno=[FAT+8*counter+2];
+			break;
+		endif;
+		counter=counter+1;
+	endwhile;
+	
+	if(counter==64) then
+		print "~ file";
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;			
+	load(1,bbno);
+	//number of codeblocks in file
+	//only 3 entries in codeblock when loaded on xfs-interface 
+	counter=0;
+	count1=0;
+	while(counter<3) do
+		if([SCRATCHPAD+counter]!=-1&&[SCRATCHPAD+counter]!="") then
+			count1=count1+1;
+		endif;
+		counter=counter+1;
+	endwhile;
+	
+	//number of codeblocks in cur process
+	
+	count2=0;
+	while(counter<3) do
+		if([PTBR+2*counter]!=-1) then
+			count2=count2+1;
+		endif;
+		counter=counter+1;
+	endwhile;
+	
+	//allocate new memblocks
+	breakpoint;
+	if(count1>count2) then
+		counter=0;
+		count3=0;
+		while(counter<64) do
+			if([MEM_LIST+counter]==0) then
+				count3=count3+1;
+			endif;	
+			counter=counter+1;
+		endwhile;
+		if(count3<count1-count2) then
+			print "~ mem";
+			[physicalSP-2]=-1;
+			ireturn;
+		endif;
+	breakpoint;	
+		counter=0;
+		count3=count1-count2;
+		while(count3>0) do
+			if([PTBR+2*counter]==-1) then
+				count=0;
+				while(count<64) do
+					if([MEM_LIST+count]==0) then
+						break;
+					endif;
+					count=count+1;
+				endwhile;
+				[MEM_LIST+count]=1;
+				[PTBR+2*counter]=count;
+				[PTBR+2*counter+1]="01";
+				count3=count3-1;
+			endif;
+			counter=counter+1;
+		endwhile;
+	else
+		if(count1<count2) then
+			counter=3;
+			count3=count2-count1;
+			while(count3>0) do
+				if([PTBR+2*counter]!=-1) then
+					[MEM_LIST+[PTBR+2*counter]]=0;
+					[PTBR+2*counter]=-1;
+					[PTBR+2*counter]="00";
+					count3=count3-1;
+				endif;
+				counter=counter-1;
+			endwhile;
+		endif;	
+	endif;		
+	counter=6;
+	while(counter>=0) do
+		if([PTBR+counter]!=-1) then
+			stacknumber=[PTBR+counter];
+			break;
+		endif;
+		counter=counter-2;
+	endwhile;		
+	breakpoint;
+	//loading from disk to mem -   code blocks
+	
+	counter=0;
+	count1=0;
+	load(1,bbno);
+	while(counter<256) do
+		if([SCRATCHPAD+counter]!=-1&&[SCRATCHPAD+counter]!="") then
+			dbno=[SCRATCHPAD+counter];
+			load(1,dbno);
+			count3=0;
+			while(count3<512) do
+				[[PTBR+2*count1]*512+count3]=[SCRATCHPAD+count3];	
+				count3=count3+1;
+			endwhile;
+			count1=count1+1;
+			load(1,bbno);
+		endif;
+		counter=counter+1;
+	endwhile;				
+			
+	breakpoint;				
+	//closing all the files										
+	counter=15;
+	
+	while(counter<31) do
+		if([curPCB+counter]!=1) then
+			filetableindex=[curPCB+counter];
+			[FILE_TABLE+filetableindex+1]=[FILE_TABLE+filetableindex+1]-1;
+			if([FILE_TABLE+filetableindex+1]==0) then
+				[FILE_TABLE+filetableindex]=-1;
+			endif;
+			
+			[curPCB+counter]=-1;
+			[curPCB+counter+1]=0;
+		endif;	
+			counter=counter+2;
+	endwhile;
+	store(5,19);
+	store(6,20);	
+	SP=3*512;
+	[stacknumber*512]=0;	
+	breakpoint;
+	ireturn;
+endif;

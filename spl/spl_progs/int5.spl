@@ -1,0 +1,134 @@
+alias counter S0;
+alias physicalSP S1;
+physicalSP=[PTBR+2*(SP/512)]*512+SP%512;
+alias syscallno S2;
+syscallno=[physicalSP-1];
+alias childPCB S3;
+alias curPID S10;
+curPID=(PTBR-1024)/8;
+alias curPCB S11;
+curPCB=READY_LIST+32*curPID;
+alias childPTBR S4;
+alias childPID S5;
+alias count S6;
+alias count2 S7;
+alias enter S8;
+
+
+if(syscallno==8) then
+
+	//find a free pcb
+	
+	counter=0;
+	while(counter<32) do
+		if([READY_LIST+32*counter+1]==0) then
+			break;
+		endif;	
+		counter=counter+1;
+	endwhile;
+
+	if(counter==32) then
+		print "PCB Full";
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	//set the childpid to counter controversial but no other option
+	
+	childPID= counter;
+	[READY_LIST+32*counter]=childPCB;
+	
+	//check if memlist has enough pages for child process
+				
+	counter=0;
+	count=0;
+	while(counter<4) do
+		if([PTBR+2*counter]!=-1) then
+			count=count+1;
+		endif;
+		counter=counter+1;
+	endwhile;
+	counter=0;
+	count2=0;
+	while(counter<64) do
+		if([MEM_LIST+counter]==0) then
+			count2=count2+1;
+		endif;
+		counter=counter+1;
+	endwhile;		
+	if(count2<count) then
+		print "~ MEM_LIST";
+		[physicalSP-1]=-1;
+		ireturn;
+	endif;
+	
+	
+	
+	childPTBR=1024+8*childPID;
+	count2=0;		 		
+	counter=0;
+	enter=0;
+	while(counter<4) do
+		if([PTBR+2*counter]!=-1) then
+			count=0;
+			enter=enter+1;
+			while(count<64) do
+				if([MEM_LIST+count]==0) then
+					break;
+				endif;
+				count=count+1;
+			endwhile;
+			[childPTBR+2*count2]=count;
+			[childPTBR+2*count2+1]="01";
+			[MEM_LIST+count]=1;
+			count2=count2+1;
+		endif;
+		counter=counter+1;
+	endwhile;
+	
+	count=0;
+	while(enter>0) do
+		if([PTBR+2*count]!=-1) then
+			counter=0;
+			while(counter<512) do
+				[[childPTBR+count*2]*512+counter]=[[PTBR+count*2]*512+counter];
+			counter=counter+1;	
+			endwhile;				
+			enter=enter-1;
+		endif; 
+		count=count+1;
+	endwhile;					
+	
+	
+	childPCB=READY_LIST+32*childPID;
+	[childPCB+1]=1;
+	[childPCB+2]=BP;
+	[childPCB+3]=SP-1;
+	[childPCB+5]=childPTBR;
+	[childPCB+6]=4;
+	[childPCB+4]=[physicalSP];
+	[childPCB+7]=R0;
+	[childPCB+8]=R1;
+	[childPCB+9]=R2;
+	[childPCB+10]=R3;
+	[childPCB+11]=R4;
+	[childPCB+12]=R5;
+	[childPCB+13]=R6;
+	[childPCB+14]=R7;
+	counter=15;
+	while(counter<31) do
+		count=[curPCB+counter];
+		[childPCB+counter]=count;
+		[childPCB+counter+1]=[curPCB+counter+1];
+		[FILE_TABLE+count+1]=[FILE_TABLE+count+1]+1;
+		counter=counter+2;
+	endwhile;
+	[physicalSP-2]=childPID;
+	count=[childPTBR+6];
+	//get the block no of child stack from childPTBR
+	[count*512+SP%512-2]=-2;	
+	[READY_LIST+childPID*32+1]=1;
+	print "fork succ";
+	breakpoint;
+	ireturn;
+endif;	
+			

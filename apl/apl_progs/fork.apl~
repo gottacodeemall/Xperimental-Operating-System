@@ -1,0 +1,11 @@
+decl
+	integer a;
+enddecl
+
+integer main(){
+	print("before fork");
+	a=Fork();
+	print("after fork");
+	
+	return 0;
+}		

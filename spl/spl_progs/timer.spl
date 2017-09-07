@@ -1,3 +1,5 @@
+print "hello";
+
 alias currentPID S0;
 currentPID = (PTBR-1024)/8;
 

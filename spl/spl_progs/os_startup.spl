@@ -1,7 +1,11 @@
+alias counter S0;
+
 //load exception handler
 load(7,1);
 load(8,2);
-
+//load timer
+load(9,3);
+load(10,4);
 //load interrupt 7
 load(23,17);
 load(24,18);
@@ -16,6 +20,13 @@ load(6,20);
 load(25,21);
 load(26,22);
 load(27,23);
+
+//setting the state of PCB to 0(terminated)
+counter=1;
+while(counter<32) do
+	[READY_LIST+32*counter+1]=0;
+	counter=counter+1;
+endwhile;
 
 //setting page_table PTBR which point to page table used for add translation
 PTBR = 1024;
@@ -51,9 +62,19 @@ load(16,10);
 load(17,11);
 load(18,12);
 
+//load interrupt 5
+load(19,13);
+load(20,14);
+
+
+//load interrupt 6
+load(21,15);
+load(22,16);
+
+
 //setting system wide open file table
 
-alias counter S0;
+
 counter = 0;
 while(counter<128) do
 	[FILE_TABLE+counter]=-1;
@@ -70,8 +91,17 @@ while(counter<=30) do
 	counter = counter + 2;
 endwhile;
 
-	
-			
-	
+//setting the mem-FREE-list 
+counter=0;
+while(counter<64) do
+	if(counter<29) then
+		[MEM_LIST+counter]=1;
+	else
+		[MEM_LIST+counter]=0;	
+	endif;
+	counter=counter+1;
+endwhile;						
+
+		
 ireturn;
 

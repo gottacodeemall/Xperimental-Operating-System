@@ -17,6 +17,10 @@ if(syscallno == 1) then
 	print filename;
 	counter=0;
 	check=0;
+	//create
+	
+	//check in fat for filename
+	
 	while(counter<64) do
 		if([FAT+8*counter]==filename) then
 			check=1;
@@ -31,6 +35,9 @@ if(syscallno == 1) then
 	else
 		print "created";
 		counter=0;
+		
+		//check for free space in fat
+		
 		while(counter<64) do
 			if([FAT+8*counter]==-1) then
 				break;
@@ -45,6 +52,9 @@ if(syscallno == 1) then
 		endif;	
 	
 		i=20;
+		
+		//check for basic block in dfl
+		
 		while(i<448) do
 			if([DISK_LIST+i]==0) then
 				break;
@@ -56,36 +66,22 @@ if(syscallno == 1) then
 			[physicalSP-2]=-1;
 			ireturn;
 		endif;			
-		i=20;
-		while(i<448) do
-			if([DISK_LIST+i]==0) then
-				break;
-			endif;
-			i=i+1;
-		endwhile;
-		if(i==448) then
-			print "~ space for db";
-			[physicalSP-2]=-1;
-			ireturn;
-		endif;
 		[FAT+8*counter+0]=filename;
 		[FAT+8*counter+1]=0;
 		[FAT+8*counter+2]=i;
 		[DISK_LIST+i]=1; //basic block update 
 		print "bb number";
-		print i;	
-		print "db number";
-		print i;	
-		// load the data block of disk onto startupcode of memory as os startup has already been executed
+		print i;		
+		// load the basic block of disk onto startupcode of memory as os startup has already been executed
 		load(1,i);
 		counter=0;
+		// fill the 
 		while(counter<512) do
 			[SCRATCHPAD+counter]=-1;
 			counter=counter+1;
 		endwhile;
 		print "db updated";
 		store(1,i);
-		[DISK_LIST+i]=1;
 		store(5,19);
 		store(6,20);
 	endif;
@@ -94,6 +90,10 @@ if(syscallno == 1) then
 	ireturn;
 else
 	if(syscallno==4) then
+	
+	//delete
+	//check for file in FAT
+	
 		counter=0;
 		while(counter<512) do
 			if([FAT+counter]==filename) then
@@ -107,6 +107,10 @@ else
 		[physicalSP-2]=-1;
 		ireturn;
 	endif;
+	
+	//check if file is opened in sytem wide open file table
+	
+	
 	counter=0;
 	while(counter<128) do
 		if([FILE_TABLE+counter]==fatindex) then
@@ -125,6 +129,8 @@ else
 		ireturn;
 	endif;
 	
+	//clear the basic block as well as the data blocks
+	
 	basicblockindex=[FAT+fatindex+2];
 	counter=0;
 	while(counter<256) do
@@ -139,6 +145,7 @@ else
 			check=check+1;
 		endwhile;
 		store(1,datablockindex);
+		[DISK_LIST+datablockindex]=0;
 		counter=counter+1;
 	endwhile;	
 	
@@ -146,7 +153,8 @@ else
 	[FAT+fatindex]=-1;
 	[FAT+fatindex+1]=0;
 	[FAT+fatindex+2]=-1;
-	
+	store(5,19);
+	store(6,20);
 	print "delete success";
 	[physicalSP-2]=0;
 	ireturn;

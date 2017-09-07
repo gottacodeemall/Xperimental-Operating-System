@@ -17,9 +17,12 @@ filename = [physicalSP-3];
 	alias perprocessfiletableindex S9;
 	
 if(syscallno==2) then
+	//open system call
 	
 	counter = 0;
 	breakpoint;
+	
+	//check the fat for valid filename
 	
 	while(counter<512) do
 		if([FAT+counter]==filename) then
@@ -30,12 +33,14 @@ if(syscallno==2) then
 	
 	breakpoint;
 	
-	if(counter==64) then
+	if(counter==512) then
 		print "not created";
 		[physicalSP-2]=-1;
 		ireturn;
 	endif;
 	fatindex = counter;
+	
+	//check the system wide open file table for fat index if there, increase count else create an index
 	
 	counter = 0;
 	while(counter < 128) do
@@ -66,6 +71,8 @@ if(syscallno==2) then
 	
 	breakpoint;
 	
+	//update system wide open fle table index to per process file table in pcb
+	
 	counter=15;
 	while(counter<=30) do
 		if([curPCB+counter]==-1) then
@@ -83,15 +90,19 @@ if(syscallno==2) then
 	breakpoint;
 	
 	[curPCB+perprocessfiletableindex]=filetableindex;
+	[curPCB+perprocessfiletableindex+1]=0;
 	[FILE_TABLE+filetableindex]=fatindex;
 	[FILE_TABLE+filetableindex+1]=[FILE_TABLE+filetableindex+1]+1;
 	breakpoint;
-	
+	store(5,19);
+	store(6,20);
 	print "file opened";
 	[physicalSP-2]=(perprocessfiletableindex-15)/2;
 	ireturn;
 else
 	if(syscallno==3) then
+		//close system call
+		//here filename is file descriptor 
 		if(filename>=0 && filename<=7) then
 			filename=(2*filename)+15;
 			if([curPCB+filename]==-1) then
@@ -106,7 +117,9 @@ else
 			endif;
 			
 			[curPCB+filename]=-1;
-			[curPCB+filename]=0;
+			[curPCB+filename+1]=0;
+			store(5,19);
+			store(6,20);
 			print "file closed";
 			[physicalSP-2]=0;
 			ireturn;	

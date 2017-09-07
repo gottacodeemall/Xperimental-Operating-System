@@ -1,0 +1,95 @@
+alias counter S0;
+alias physicalSP S1;
+physicalSP=[PTBR+2*(SP/512)]+SP%512;
+alias syscallno S2;
+syscallno=[physicalSP-1];
+alias curPID S3;
+alias filename S4;
+filename=[physicalSP-3];
+curPID=(PTBR-1024)/8;
+alias curPCB S5;
+curPCB=READY_LIST+32*curPID;
+alias bbno S6;
+alias filetableindex S7;
+alias newPID S11;	
+alias newPCB S12;
+alias newphysicalSP S13;
+
+if(syscallno==10) then
+	counter=0;
+	while(counter<32) do
+		if(counter!=curPID&&[READY_LIST+32*counter+1]!=0) then
+			break;
+		endif;
+		counter=counter+1;
+	endwhile;
+	if(counter==32) then
+		print "halting";
+		halt;
+	endif;
+				
+		counter=15;
+	
+	while(counter<31) do
+		if([curPCB+counter]!=1) then
+			filetableindex=[curPCB+counter];
+			[FILE_TABLE+filetableindex+1]=[FILE_TABLE+filetableindex+1]-1;
+			if([FILE_TABLE+filetableindex+1]==0) then
+				[FILE_TABLE+filetableindex]=-1;
+			endif;
+			
+			[curPCB+counter]=-1;
+			[curPCB+counter+1]=0;
+		endif;	
+			counter=counter+2;
+	endwhile;
+	store(5,19);
+	store(6,20);
+	
+	[curPCB+1]=0;
+	
+	counter=0;
+	while(counter<4) do
+		if([PTBR+8*curPID+2*counter]!=-1) then
+			[PTBR+8*curPID+2*counter]=-1;
+			[PTBR+8*curPID+2*counter]="00";
+		endif;
+		counter=counter+1;
+	endwhile;
+		
+		//use round robin scheduling to get the next status 1 pid
+	newPID=(curPID+1)%32;
+	newPCB=READY_LIST+32*newPID;
+	
+	while(newPID!=curPID) do
+		if([newPCB+1]==1) then
+			break;
+		endif;
+		newPID=(newPID+1)%32;
+		newPCB=READY_LIST+newPID*32;
+	endwhile;
+		
+	// load the values of pcb to registers
+	[newPCB + 1]=2;
+	BP=[newPCB + 2];
+	SP=[newPCB + 3];
+	PTBR = [newPCB + 5];
+	PTLR = [newPCB + 6];
+	R0 = [newPCB + 7];
+	R1 = [newPCB + 8];
+	R2 = [newPCB + 9];
+	R3 = [newPCB + 10];
+	R4 = [newPCB + 11];
+	R5 = [newPCB + 12];
+	R6 = [newPCB + 13];
+	R7 = [newPCB + 14];
+
+
+	//SETTING THE VALUE OF IP TO TOP OF STACK AS WE CANNOT CHANGE IT 	DIRECTLY(USER INSTRUCTION PRIVILEGES)
+	SP=SP+1;
+	newphysicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+	[ newphysicalSP ] = [ newPCB + 4 ];
+	ireturn;		
+			
+	
+endif;	

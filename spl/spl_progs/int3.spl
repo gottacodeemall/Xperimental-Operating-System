@@ -21,6 +21,10 @@ alias temp S13;
 alias filesize S14;
 
 if(syscallno==6) then
+	//seek system call
+	
+	//valid file descriptor
+	
 	if(filename>=0 && filename<=7) then
 		filename=2*filename + 15;
 		if([curPCB+filename]==-1) then
@@ -28,6 +32,7 @@ if(syscallno==6) then
 			[physicalSP-2]=-1;
 			ireturn;
 		else
+		
 			filetableindex=[curPCB+filename];
 			lseek=[curPCB+filename+1];
 			if([filetableindex+FILE_TABLE]==-1) then
@@ -36,7 +41,7 @@ if(syscallno==6) then
 				ireturn;
 			else
 				fatindex=[filetableindex+FILE_TABLE];
-				temp=[FAT+fatindex];
+				temp=[FAT+fatindex+1];
 				if(newlseek>=0 && newlseek<=temp) then
 					[curPCB+filename+1]=newlseek;
 				else
@@ -51,11 +56,16 @@ if(syscallno==6) then
 		[physicalSP-2]=-1;
 		ireturn;
 	endif;
+	store(5,19);
+	store(6,20);
 	print "seek success";
 	[physicalSP-2]=0;
 	ireturn;
 else
 	if(syscallno==7) then
+	
+		// read system call
+		
 		if(filename>=0 && filename<=7) then
 			filename=2*filename + 15;
 			if([curPCB+filename]==-1) then
@@ -97,7 +107,8 @@ else
 					[physicalSP-3]=[SCRATCHPAD+counter];
 					store(1,temp);
 					[curPCB+filename+1]=[curPCB+filename+1] +1;		
-					
+					store(5,19);
+					store(6,20);
 					print "read success";
 					[physicalSP-2]=0;
 					ireturn;

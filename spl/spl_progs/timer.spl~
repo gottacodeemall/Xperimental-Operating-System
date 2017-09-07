@@ -32,7 +32,7 @@ alias newPCB S4;
 newPID=(currentPID+1)%32;
 newPCB=READY_LIST+32*newPID;
 
-while(newPID!=curPID) do
+while(newPID!=currentPID) do
 	if([newPCB+1]==1) then
 		break;
 	endif;

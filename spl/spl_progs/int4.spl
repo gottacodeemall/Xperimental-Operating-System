@@ -20,6 +20,7 @@ alias bbindex S12;
 alias temp S13;
 
 if(syscallno==5) then
+	//write system call
 	if(filename>=0 && filename<=7) then
 		filename=2*filename + 15;
 		if([curPCB+filename]==-1) then
@@ -68,7 +69,8 @@ if(syscallno==5) then
 				[SCRATCHPAD+counter]=word;
 				store(1,temp);
 				[curPCB+filename+1]=[curPCB+filename+1] +1;		
-				
+				store(5,19);
+				store(6,20);
 				print "write success";
 				[physicalSP-2]=0;
 				ireturn;

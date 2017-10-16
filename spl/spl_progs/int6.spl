@@ -17,11 +17,12 @@ alias count S10;
 alias dbno S11;
 alias filetableindex S12;
 alias stacknumber S13;
+alias parPID S14;
 
 if(syscallno==9) then
 
 	//search for file
-	
+
 	counter=0;
 	while(counter<64) do
 		if([FAT+8*counter]==filename) then
@@ -30,15 +31,15 @@ if(syscallno==9) then
 		endif;
 		counter=counter+1;
 	endwhile;
-	
+
 	if(counter==64) then
 		print "~ file";
 		[physicalSP-2]=-1;
 		ireturn;
-	endif;			
+	endif;
 	load(1,bbno);
 	//number of codeblocks in file
-	//only 3 entries in codeblock when loaded on xfs-interface 
+	//only 3 entries in codeblock when loaded on xfs-interface
 	counter=0;
 	count1=0;
 	while(counter<256) do
@@ -47,9 +48,9 @@ if(syscallno==9) then
 		endif;
 		counter=counter+1;
 	endwhile;
-	
+
 	//number of codeblocks in cur process
-	
+
 	count2=0;
 	while(counter<3) do
 		if([PTBR+2*counter]!=-1) then
@@ -57,8 +58,8 @@ if(syscallno==9) then
 		endif;
 		counter=counter+1;
 	endwhile;
-	
-	//allocate new memblocks
+
+	//allocate new memblocks count1==newfile  count2==curexecprocess
 	breakpoint;
 	if(count1>count2) then
 		counter=0;
@@ -66,7 +67,7 @@ if(syscallno==9) then
 		while(counter<64) do
 			if([MEM_LIST+counter]==0) then
 				count3=count3+1;
-			endif;	
+			endif;
 			counter=counter+1;
 		endwhile;
 		if(count3<count1-count2) then
@@ -74,7 +75,7 @@ if(syscallno==9) then
 			[physicalSP-2]=-1;
 			ireturn;
 		endif;
-	breakpoint;	
+	breakpoint;
 		counter=0;
 		count3=count1-count2;
 		while(count3>0) do
@@ -106,8 +107,8 @@ if(syscallno==9) then
 				endif;
 				counter=counter-1;
 			endwhile;
-		endif;	
-	endif;		
+		endif;
+	endif;
 	counter=6;
 	while(counter>=0) do
 		if([PTBR+counter]!=-1) then
@@ -115,10 +116,10 @@ if(syscallno==9) then
 			break;
 		endif;
 		counter=counter-2;
-	endwhile;		
+	endwhile;
 	breakpoint;
 	//loading from disk to mem -   code blocks
-	
+
 	counter=0;
 	count1=0;
 	load(1,bbno);
@@ -128,19 +129,19 @@ if(syscallno==9) then
 			load(1,dbno);
 			count3=0;
 			while(count3<512) do
-				[[PTBR+2*count1]*512+count3]=[SCRATCHPAD+count3];	
+				[[PTBR+2*count1]*512+count3]=[SCRATCHPAD+count3];
 				count3=count3+1;
 			endwhile;
 			count1=count1+1;
 			load(1,bbno);
 		endif;
 		counter=counter+1;
-	endwhile;				
-			
-	breakpoint;				
-	//closing all the files										
+	endwhile;
+
+	breakpoint;
+	//closing all the files
 	counter=15;
-	
+
 	while(counter<31) do
 		if([curPCB+counter]!=1) then
 			filetableindex=[curPCB+counter];
@@ -148,16 +149,35 @@ if(syscallno==9) then
 			if([FILE_TABLE+filetableindex+1]==0) then
 				[FILE_TABLE+filetableindex]=-1;
 			endif;
-			
+
 			[curPCB+counter]=-1;
 			[curPCB+counter+1]=0;
-		endif;	
+		endif;
 			counter=counter+2;
 	endwhile;
 	store(5,19);
-	store(6,20);	
+	store(6,20);
 	SP=3*512;
-	[stacknumber*512]=0;	
+	[stacknumber*512]=0;
 	breakpoint;
 	ireturn;
+else
+	if(syscallno==11) then
+		if(curPID<0 && curPID>=32) then
+			[physicalSP-2]=-1;
+			ireturn;
+		endif;
+		[physicalSP-2]=curPID;
+		ireturn;
+	else
+		if(syscallno==12) then
+			parPID=[curPCB+31];
+			if(parPID<0 && parPID>=32) then
+			[physicalSP-2]=-1;
+			ireturn;
+			endif;
+		[physicalSP-2]=parPID;
+		ireturn;
+		endif;
+	endif;						
 endif;

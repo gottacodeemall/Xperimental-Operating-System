@@ -90,6 +90,8 @@ while(counter<=30) do
 	[READY_LIST+counter+1]=0;
 	counter = counter + 2;
 endwhile;
+//setting the parent of init process to itself
+[READY_LIST+31]=0;
 
 //setting the mem-FREE-list 
 counter=0;

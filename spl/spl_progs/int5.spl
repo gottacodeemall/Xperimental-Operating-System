@@ -16,7 +16,9 @@ alias enter S8;
 
 
 if(syscallno==8) then
-
+	//fork
+	
+	
 	//find a free pcb
 	
 	counter=0;
@@ -63,6 +65,8 @@ if(syscallno==8) then
 	
 	
 	
+	//allocate equal number of mem blocks to child process
+	
 	childPTBR=1024+8*childPID;
 	count2=0;		 		
 	counter=0;
@@ -85,6 +89,8 @@ if(syscallno==8) then
 		counter=counter+1;
 	endwhile;
 	
+	//copy all the contents of the parent process mem blocks to child process  mem blocks
+	
 	count=0;
 	while(enter>0) do
 		if([PTBR+2*count]!=-1) then
@@ -98,6 +104,7 @@ if(syscallno==8) then
 		count=count+1;
 	endwhile;					
 	
+	//setting up the pcb for child process
 	
 	childPCB=READY_LIST+32*childPID;
 	[childPCB+1]=1;
@@ -119,9 +126,12 @@ if(syscallno==8) then
 		count=[curPCB+counter];
 		[childPCB+counter]=count;
 		[childPCB+counter+1]=[curPCB+counter+1];
-		[FILE_TABLE+count+1]=[FILE_TABLE+count+1]+1;
+		[FILE_TABLE+count+1]=[FILE_TABLE+count+1]+1; // increase the count in the sys wide open file table
 		counter=counter+2;
 	endwhile;
+	
+	[childPCB+31]=curPID;
+	
 	[physicalSP-2]=childPID;
 	count=[childPTBR+6];
 	//get the block no of child stack from childPTBR

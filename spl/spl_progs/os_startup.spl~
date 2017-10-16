@@ -3,7 +3,9 @@ alias counter S0;
 //load exception handler
 load(7,1);
 load(8,2);
-
+//load timer
+load(9,3);
+load(10,4);
 //load interrupt 7
 load(23,17);
 load(24,18);
@@ -38,12 +40,10 @@ PTLR = 4;
 [PTBR + 6] = 28;
 [PTBR + 7] = "01";
 [READY_LIST + 1] = 2;
-breakpoint;
 //logical page number 3 for stack
 SP = 3 * 512;
 //putting the value of IP on top of stack of INIT process page 28
 [28 * 512] = 0;
-breakpoint;
 //load interrupt 1
 load(11,5);
 load(12,6);
@@ -88,6 +88,8 @@ while(counter<=30) do
 	[READY_LIST+counter+1]=0;
 	counter = counter + 2;
 endwhile;
+//setting the parent of init process to itself
+[READY_LIST+31]=0;
 
 //setting the mem-FREE-list 
 counter=0;

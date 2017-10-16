@@ -1,6 +1,6 @@
 alias counter S0;
 alias physicalSP S1;
-physicalSP=[PTBR+2*(SP/512)]+SP%512;
+physicalSP=[PTBR+2*(SP/512)]*512+SP%512;
 alias syscallno S2;
 syscallno=[physicalSP-1];
 alias curPID S3;
@@ -11,9 +11,10 @@ alias curPCB S5;
 curPCB=READY_LIST+32*curPID;
 alias bbno S6;
 alias filetableindex S7;
-alias newPID S11;	
+alias newPID S11;
 alias newPCB S12;
 alias newphysicalSP S13;
+alias waitPCB S14;
 
 if(syscallno==10) then
 	counter=0;
@@ -27,9 +28,9 @@ if(syscallno==10) then
 		print "halting";
 		halt;
 	endif;
-				
+
 		counter=15;
-	
+
 	while(counter<31) do
 		if([curPCB+counter]!=1) then
 			filetableindex=[curPCB+counter];
@@ -37,17 +38,19 @@ if(syscallno==10) then
 			if([FILE_TABLE+filetableindex+1]==0) then
 				[FILE_TABLE+filetableindex]=-1;
 			endif;
-			
+
 			[curPCB+counter]=-1;
 			[curPCB+counter+1]=0;
-		endif;	
+		endif;
 			counter=counter+2;
 	endwhile;
 	store(5,19);
 	store(6,20);
-	
+
 	[curPCB+1]=0;
-	
+
+	//setting the page table of the current process to invalid
+
 	counter=0;
 	while(counter<4) do
 		if([PTBR+8*curPID+2*counter]!=-1) then
@@ -56,19 +59,26 @@ if(syscallno==10) then
 		endif;
 		counter=counter+1;
 	endwhile;
-		
+
+	breakpoint;
 		//use round robin scheduling to get the next status 1 pid
 	newPID=(curPID+1)%32;
 	newPCB=READY_LIST+32*newPID;
-	
+
 	while(newPID!=curPID) do
+		if([newPCB+1]>=100) then
+			if([READY_LIST+([newPCB+1]-100)*32+1]==0) then //checking if the waiting process is completed or not
+				break;
+			else
+				continue;
+			endif;
+		endif;
 		if([newPCB+1]==1) then
 			break;
 		endif;
 		newPID=(newPID+1)%32;
 		newPCB=READY_LIST+newPID*32;
 	endwhile;
-		
 	// load the values of pcb to registers
 	[newPCB + 1]=2;
 	BP=[newPCB + 2];
@@ -89,7 +99,50 @@ if(syscallno==10) then
 	SP=SP+1;
 	newphysicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
 	[ newphysicalSP ] = [ newPCB + 4 ];
-	ireturn;		
-			
-	
-endif;	
+	ireturn;
+else
+	if(syscallno==13) then
+		// here filename is the processid for the process to be exectuted
+		waitPCB=READY_LIST+32*filename;
+		if([waitPCB+1]==2) then
+			[physicalSP-2]=-1;
+			ireturn;
+		endif;
+		if([waitPCB+1]==0) then
+			[physicalSP-2]=-1;
+			ireturn;
+		endif;
+		
+		[curPCB+1]=1;
+		[curPCB+2]=BP;
+		[curPCB+3]=SP-1;
+		[curPCB+4]=[physicalSP];
+		[curPCB+5]=PTBR;
+		[curPCB+6]=PTLR;
+		[curPCB+7]=R0;
+		[curPCB+8]=R1;
+		[curPCB+9]=R2;
+		[curPCB+10]=R3;
+		[curPCB+11]=R4;
+		[curPCB+12]=R5;
+		[curPCB+13]=R6;
+		[curPCB+14]=R7;
+		[curPCB+1]=100+filename; //wait for the given process to be completed
+		inline "JMP  12048";
+	else
+		if(syscallno==14) then
+				newPID=0;
+				while(newPID<=31) do
+					if([READY_LIST+32*newPID+1]>=100) then
+						[READY_LIST+32*newPID+1]=1;
+					endif;
+					newPID=newPID+1;
+				endwhile;
+				[physicalSP-2]=1;
+				ireturn;
+		endif;
+	endif;
+endif;
+
+
+// oka adbhuth doubt ippudu suppose exit context switching lo inkemaina process trigger chesthe resume chesey kodudhu kadha mari doc lo exit chesinappu annitini ready cheseyyachu ani ichesadu

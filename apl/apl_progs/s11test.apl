@@ -1,18 +1,16 @@
-
 integer main(){
-	integer a,b,c;
-	a=Fork();
-	print(a);
-	b=Getpid();
-	print(b);
-	a=Getppid();
-	print(a);
-	a=Wait(b);
-	print("karthik");
-	print(a);
-	a=Signal();
-	print("test");
-	print(a);
+    integer a,b,c,d;
+    a=Fork();
+    print(a);
+    b=Getpid();
+    print(b);
+    c=Getppid();
+    print(c);
+    if(a==1) then
+        d=Wait(1);
+        print("karthik");
+        print(d);
+    endif;
 
-	return 0;
+    return 0;
 }

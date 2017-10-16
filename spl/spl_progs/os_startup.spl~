@@ -3,7 +3,9 @@ alias counter S0;
 //load exception handler
 load(7,1);
 load(8,2);
-
+//load timer
+load(9,3);
+load(10,4);
 //load interrupt 7
 load(23,17);
 load(24,18);
@@ -88,6 +90,8 @@ while(counter<=30) do
 	[READY_LIST+counter+1]=0;
 	counter = counter + 2;
 endwhile;
+//setting the parent of init process to itself
+[READY_LIST+31]=0;
 
 //setting the mem-FREE-list 
 counter=0;

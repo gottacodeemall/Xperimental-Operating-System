@@ -60,6 +60,7 @@ if(syscallno==10) then
 		counter=counter+1;
 	endwhile;
 
+	breakpoint;
 		//use round robin scheduling to get the next status 1 pid
 	newPID=(curPID+1)%32;
 	newPCB=READY_LIST+32*newPID;
@@ -111,7 +112,23 @@ else
 			[physicalSP-2]=-1;
 			ireturn;
 		endif;
+		
+		[curPCB+1]=1;
+		[curPCB+2]=BP;
+		[curPCB+3]=SP-1;
+		[curPCB+4]=[physicalSP];
+		[curPCB+5]=PTBR;
+		[curPCB+6]=PTLR;
+		[curPCB+7]=R0;
+		[curPCB+8]=R1;
+		[curPCB+9]=R2;
+		[curPCB+10]=R3;
+		[curPCB+11]=R4;
+		[curPCB+12]=R5;
+		[curPCB+13]=R6;
+		[curPCB+14]=R7;
 		[curPCB+1]=100+filename; //wait for the given process to be completed
+		inline "JMP  12072";
 	else
 		if(syscallno==14) then
 				newPID=0;

@@ -59,7 +59,11 @@ if(syscallno==10) then
 		endif;
 		counter=counter+1;
 	endwhile;
+<<<<<<< HEAD
 	
+=======
+
+>>>>>>> stage_11
 	breakpoint;
 		//use round robin scheduling to get the next status 1 pid
 	newPID=(curPID+1)%32;
@@ -112,6 +116,10 @@ else
 			[physicalSP-2]=-1;
 			ireturn;
 		endif;
+<<<<<<< HEAD
+=======
+		
+>>>>>>> stage_11
 		[curPCB+1]=1;
 		[curPCB+2]=BP;
 		[curPCB+3]=SP-1;
@@ -127,8 +135,12 @@ else
 		[curPCB+13]=R6;
 		[curPCB+14]=R7;
 		[curPCB+1]=100+filename; //wait for the given process to be completed
+<<<<<<< HEAD
 		breakpoint;
 		inline "JMP 12072";//jump to scheduler
+=======
+		inline "JMP  12048";
+>>>>>>> stage_11
 	else
 		if(syscallno==14) then
 				newPID=0;

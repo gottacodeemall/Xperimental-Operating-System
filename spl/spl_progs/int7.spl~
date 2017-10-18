@@ -128,7 +128,7 @@ else
 		[curPCB+13]=R6;
 		[curPCB+14]=R7;
 		[curPCB+1]=100+filename; //wait for the given process to be completed
-		inline "JMP  12048";
+		inline "JMP  12072";
 	else
 		if(syscallno==14) then
 				newPID=0;

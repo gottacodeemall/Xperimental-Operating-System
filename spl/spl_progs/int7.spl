@@ -53,9 +53,10 @@ if(syscallno==10) then
 
 	counter=0;
 	while(counter<4) do
-		if([PTBR+8*curPID+2*counter]!=-1) then
-			[PTBR+8*curPID+2*counter]=-1;
-			[PTBR+8*curPID+2*counter]="00";
+		if([PTBR+2*counter]!=-1) then
+			[MEM_LIST+[PTBR+2*counter]]=0;
+			[PTBR+2*counter]=-1;
+			[PTBR+2*counter+1]="00";
 		endif;
 		counter=counter+1;
 	endwhile;

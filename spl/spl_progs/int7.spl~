@@ -136,10 +136,14 @@ else
 		[curPCB+14]=R7;
 		[curPCB+1]=100+filename; //wait for the given process to be completed
 <<<<<<< HEAD
+<<<<<<< HEAD
 		breakpoint;
 		inline "JMP 12072";//jump to scheduler
 =======
 		inline "JMP  12048";
+>>>>>>> stage_11
+=======
+		inline "JMP  12072";
 >>>>>>> stage_11
 	else
 		if(syscallno==14) then

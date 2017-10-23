@@ -17,9 +17,9 @@ load(6,20);
 [READY_LIST+0]=0;
 
 //load init
-load(25,21);
-load(26,22);
-load(27,23);
+//load(25,21);
+//load(26,22);
+//load(27,23);
 
 //setting the state of PCB to 0(terminated)
 counter=1;
@@ -31,21 +31,19 @@ endwhile;
 //setting page_table PTBR which point to page table used for add translation
 PTBR = 1024;
 PTLR = 4;
-[PTBR + 0] = 25;
-[PTBR + 1] = "01";
-[PTBR + 2] = 26;
-[PTBR + 3] = "01";
-[PTBR + 4] = 27;
-[PTBR + 5] = "01";
-[PTBR + 6] = 28;
+[PTBR + 0] = 21;
+[PTBR + 1] = "00";
+[PTBR + 2] = 22;
+[PTBR + 3] = "00";
+[PTBR + 4] = 23;
+[PTBR + 5] = "00";
+[PTBR + 6] = 25;
 [PTBR + 7] = "01";
 [READY_LIST + 1] = 2;
-breakpoint;
 //logical page number 3 for stack
 SP = 3 * 512;
 //putting the value of IP on top of stack of INIT process page 28
-[28 * 512] = 0;
-breakpoint;
+[25 * 512] = 0;
 //load interrupt 1
 load(11,5);
 load(12,6);
@@ -96,13 +94,20 @@ endwhile;
 //setting the mem-FREE-list 
 counter=0;
 while(counter<64) do
-	if(counter<29) then
+	if(counter<26) then
 		[MEM_LIST+counter]=1;
 	else
 		[MEM_LIST+counter]=0;	
 	endif;
 	counter=counter+1;
-endwhile;						
+endwhile;
+
+counter=448;
+while(counter<512) do
+	[DISK_LIST+counter]=0;
+	counter=counter+1;
+endwhile;
+store(6,20);							
 
 		
 ireturn;

@@ -40,7 +40,7 @@ else
 endif;			
 
 if(freepage==-1) then
-	//print "no free page";
+	print "no free page";
 	counter=curpid;
 	breakpoint;
 	flag=0;

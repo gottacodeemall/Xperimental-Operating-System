@@ -31,114 +31,37 @@ if(syscallno==9) then
 		endif;
 		counter=counter+1;
 	endwhile;
-
 	if(counter==64) then
 		print "~ file";
 		[physicalSP-2]=-1;
 		ireturn;
 	endif;
 	load(1,bbno);
-	//number of codeblocks in file
-	//only 3 entries in codeblock when loaded on xfs-interface
+	// go through the basic block
 	counter=0;
-	count1=0;
-	while(counter<256) do
-		if([SCRATCHPAD+counter]!=-1&&[SCRATCHPAD+counter]!="") then
-			count1=count1+1;
-		endif;
-		counter=counter+1;
-	endwhile;
-
-	//number of codeblocks in cur process
-
-	count2=0;
+	load(6,20);
 	while(counter<3) do
-		if([PTBR+2*counter]!=-1) then
-			count2=count2+1;
+		if([PTBR+2*counter+1]=="01" || [PTBR+2*counter+1]=="11") then
+			[MEM_LIST+[PTBR+2*counter]]=[MEM_LIST+[PTBR+2*counter]]-1;
 		endif;
-		counter=counter+1;
-	endwhile;
-
-	//allocate new memblocks count1==newfile  count2==curexecprocess
-	breakpoint;
-	if(count1>count2) then
-		counter=0;
-		count3=0;
-		while(counter<64) do
-			if([MEM_LIST+counter]==0) then
-				count3=count3+1;
-			endif;
-			counter=counter+1;
-		endwhile;
-		if(count3<count1-count2) then
-			print "~ mem";
-			[physicalSP-2]=-1;
-			ireturn;
+		if([PTBR+2*counter]>=448&&([PTBR+2*counter+1]=="00" || [PTBR+2*counter+1]=="10")) then	
+			[DISK_LIST+[PTBR+2*counter]]=[DISK_LIST+[PTBR+2*counter]]-1;
 		endif;
-	breakpoint;
-		counter=0;
-		count3=count1-count2;
-		while(count3>0) do
-			if([PTBR+2*counter]==-1) then
-				count=0;
-				while(count<64) do
-					if([MEM_LIST+count]==0) then
-						break;
-					endif;
-					count=count+1;
-				endwhile;
-				[MEM_LIST+count]=1;
-				[PTBR+2*counter]=count;
-				[PTBR+2*counter+1]="01";
-				count3=count3-1;
-			endif;
-			counter=counter+1;
-		endwhile;
-	else
-		if(count1<count2) then
-			counter=3;
-			count3=count2-count1;
-			while(count3>0) do
-				if([PTBR+2*counter]!=-1) then
-					[MEM_LIST+[PTBR+2*counter]]=0;
-					[PTBR+2*counter]=-1;
-					[PTBR+2*counter]="00";
-					count3=count3-1;
-				endif;
-				counter=counter-1;
-			endwhile;
-		endif;
-	endif;
-	counter=6;
-	while(counter>=0) do
-		if([PTBR+counter]!=-1) then
-			stacknumber=[PTBR+counter];
-			break;
-		endif;
-		counter=counter-2;
-	endwhile;
-	breakpoint;
-	//loading from disk to mem -   code blocks
-
-	counter=0;
-	count1=0;
-	load(1,bbno);
-	while(counter<256) do
 		if([SCRATCHPAD+counter]!=-1&&[SCRATCHPAD+counter]!="") then
-			dbno=[SCRATCHPAD+counter];
-			load(1,dbno);
-			count3=0;
-			while(count3<512) do
-				[[PTBR+2*count1]*512+count3]=[SCRATCHPAD+count3];
-				count3=count3+1;
-			endwhile;
-			count1=count1+1;
-			load(1,bbno);
+			[PTBR+2*counter]=[SCRATCHPAD+counter];
+			[PTBR+2*counter+1]="00";
+		else
+			[PTBR+2*counter]=-1;
+			[PTBR+2*counter+1]="00";
 		endif;
 		counter=counter+1;
 	endwhile;
+	store(6,20);
 
-	breakpoint;
+	stacknumber=[PTBR+6];
+	[PTBR+7]="01";
+
+	//breakpoint;
 	//closing all the files
 	counter=15;
 
@@ -159,7 +82,8 @@ if(syscallno==9) then
 	store(6,20);
 	SP=3*512;
 	[stacknumber*512]=0;
-	breakpoint;
+	//breakpoint;
+	print "exec success";
 	ireturn;
 else
 	if(syscallno==11) then

@@ -17,7 +17,7 @@ alias newphysicalSP S13;
 alias waitPCB S14;
 
 if(syscallno==10) then
-	breakpoint;
+	//breakpoint;
 	counter=0;
 	while(counter<32) do
 		if(counter!=curPID&&[READY_LIST+32*counter+1]!=0) then
@@ -67,20 +67,19 @@ if(syscallno==10) then
 	endwhile;
 	store(6,20);
 	
-	
+	counter=0;
+	while(counter<32) do
+		if([READY_LIST+32*counter+1]==100+curPID) then
+			[READY_LIST+32*counter+1]=1;
+		endif;
+		counter=counter+1;
+	endwhile;		
 	breakpoint;
 		//use round robin scheduling to get the next status 1 pid
 	newPID=(curPID+1)%32;
 	newPCB=READY_LIST+32*newPID;
 
 	while(newPID!=curPID) do
-		if([newPCB+1]>=100) then
-			if([READY_LIST+([newPCB+1]-100)*32+1]==0) then //checking if the waiting process is completed or not
-				break;
-			else
-				continue;
-			endif;
-		endif;
 		if([newPCB+1]==1) then
 			break;
 		endif;
@@ -136,12 +135,12 @@ else
 		[curPCB+13]=R6;
 		[curPCB+14]=R7;
 		[curPCB+1]=100+filename; //wait for the given process to be completed
-		inline "JMP  12072";
+		inline "JMP  12252";
 	else
 		if(syscallno==14) then
 				newPID=0;
 				while(newPID<=31) do
-					if([READY_LIST+32*newPID+1]>=100) then
+					if([READY_LIST+32*newPID+1]==100+curPID) then
 						[READY_LIST+32*newPID+1]=1;
 					endif;
 					newPID=newPID+1;

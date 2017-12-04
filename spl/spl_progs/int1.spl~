@@ -20,6 +20,7 @@ if(syscallno == 1) then
 	//create
 	
 	//check in fat for filename
+	
 	while(counter<64) do
 		if([FAT+8*counter]==filename) then
 			check=1;
@@ -68,6 +69,7 @@ if(syscallno == 1) then
 		[FAT+8*counter+0]=filename;
 		[FAT+8*counter+1]=0;
 		[FAT+8*counter+2]=i;
+		load(6,20);
 		[DISK_LIST+i]=1; //basic block update 
 		print "bb number";
 		print i;		
@@ -80,7 +82,6 @@ if(syscallno == 1) then
 			counter=counter+1;
 		endwhile;
 		print "db updated";
-		store(1,i);
 		store(5,19);
 		store(6,20);
 	endif;

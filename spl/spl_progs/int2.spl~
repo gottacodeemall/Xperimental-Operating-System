@@ -90,6 +90,7 @@ if(syscallno==2) then
 	breakpoint;
 	
 	[curPCB+perprocessfiletableindex]=filetableindex;
+	[curPCB+perprocessfiletableindex+1]=0;
 	[FILE_TABLE+filetableindex]=fatindex;
 	[FILE_TABLE+filetableindex+1]=[FILE_TABLE+filetableindex+1]+1;
 	breakpoint;

@@ -1,5 +1,12 @@
 alias counter S0;
 
+
+	// important note: here the the pointer to system wide open file table consists of the crct value of entry(range:0 - 127) in steps of 2 so no need to multiply by 2 
+	// same is applicable to the fat index spread out over(range:0-512) in steps of 8
+	
+	
+	
+	
 //load exception handler
 load(7,1);
 load(8,2);

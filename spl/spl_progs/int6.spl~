@@ -41,15 +41,20 @@ if(syscallno==9) then
 	counter=0;
 	load(6,20);
 	while(counter<3) do
+	//reduce the mem_list and disk_list of the process to be swapped out 
+		if([PTBR+2*counter+1]=="01" || [PTBR+2*counter+1]=="11") then
+			[MEM_LIST+[PTBR+2*counter]]=[MEM_LIST+[PTBR+2*counter]]-1;
+		endif;
+		if([PTBR+2*counter]>=448&&([PTBR+2*counter+1]=="00" || [PTBR+2*counter+1]=="10")) then	
+			[DISK_LIST+[PTBR+2*counter]]=[DISK_LIST+[PTBR+2*counter]]-1;
+		endif;
+	//update the per process page table for the new process
 		if([SCRATCHPAD+counter]!=-1&&[SCRATCHPAD+counter]!="") then
 			[PTBR+2*counter]=[SCRATCHPAD+counter];
 			[PTBR+2*counter+1]="00";
-			if([PTBR+2*counter+1]=="01" || [PTBR+2*counter+1]=="11") then
-				[MEM_LIST+[PTBR+2*counter]]=[MEM_LIST+[PTBR+2*counter]]-1;
-			endif;
-			if([PTBR+2*counter]>=448&&([PTBR+2*counter+1]=="00" || [PTBR+2*counter+1]=="10")) then	
-				[DISK_LIST+[PTBR+2*counter]]=[DISK_LIST+[PTBR+2*counter]]-1;
-			endif;
+		else
+			[PTBR+2*counter]=-1;
+			[PTBR+2*counter+1]="00";
 		endif;
 		counter=counter+1;
 	endwhile;

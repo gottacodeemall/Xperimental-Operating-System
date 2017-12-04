@@ -20,6 +20,7 @@ alias bbindex S12;
 alias temp S13;
 
 if(syscallno==5) then
+	//write system call
 	if(filename>=0 && filename<=7) then
 		filename=2*filename + 15;
 		if([curPCB+filename]==-1) then

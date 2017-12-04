@@ -27,7 +27,7 @@ integer main(){
 				break;
 			endif;
 		endif;
-		print("XOS-$");
+		print("XOS-$");							//read another command
 		read(re);
 	endwhile;
 	return 0;

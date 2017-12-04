@@ -19,8 +19,6 @@ alias calcred S13;
 
 if(syscallno==8) then
 	//fork
-	
-	
 	//find a free pcb
 	
 	counter=0;
@@ -51,9 +49,9 @@ if(syscallno==8) then
 		endif;
 		counter=counter+1;
 	endwhile;
-			
+	//if no place for stack use page replacement		
 	if(count==70) then
-		print "~MEM stack";
+		print "~MEM st fixed";
 		counter=curPID;
 		flag=0;
 		while(1) do
@@ -150,10 +148,13 @@ if(syscallno==8) then
 		count=[curPCB+counter];
 		[childPCB+counter]=count;
 		[childPCB+counter+1]=[curPCB+counter+1];
-		[FILE_TABLE+count+1]=[FILE_TABLE+count+1]+1;
+		if(count!=-1) then
+			[FILE_TABLE+count+1]=[FILE_TABLE+count+1]+1;
+		endif;	
 		counter=counter+2;
 	endwhile;
-	
+	// important note: here the the pointer to system wide open file table consists of the crct value of entry(range:0 - 127) in steps of 2 so no need to multiply by 2 
+	// same is applicable to the fat index spread out over(range:0-512) in steps of 8
 	[childPCB+31]=curPID;
 	
 	[physicalSP-2]=childPID;

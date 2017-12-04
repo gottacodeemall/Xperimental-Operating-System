@@ -11,7 +11,7 @@ integer main(){
 	while(re != "exit") do
 		a=Fork();
 		if(a==-1) then
-			print("cannot fork");               //fork so that we can ececute the command
+			print("cannot fork");               //fork so that we can execute the command
 			break;
 		endif;
 		if(a==-2) then

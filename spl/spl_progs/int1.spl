@@ -69,6 +69,7 @@ if(syscallno == 1) then
 		[FAT+8*counter+0]=filename;
 		[FAT+8*counter+1]=0;
 		[FAT+8*counter+2]=i;
+		load(6,20);
 		[DISK_LIST+i]=1; //basic block update 
 		print "bb number";
 		print i;		

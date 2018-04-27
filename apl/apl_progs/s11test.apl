@@ -1,20 +1,4 @@
 integer main(){
-<<<<<<< HEAD
-	integer a,b,c,d;
-	a=Fork();
-	print(a);
-	b=Getpid();
-	print(b);
-	c=Getppid();
-	print(c);
-	if(a==1) then
-		d=Wait(1);
-		print("karthik");
-		print(d);
-	endif;
-
-	return 0;
-=======
     integer a,b,c,d;
     a=Fork();
     print(a);
@@ -29,5 +13,4 @@ integer main(){
     endif;
 
     return 0;
->>>>>>> stage_11
 }

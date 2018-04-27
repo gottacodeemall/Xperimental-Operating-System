@@ -13,12 +13,12 @@ alias childPID S5;
 alias count S6;
 alias count2 S7;
 alias enter S8;
-
+alias freepage S9;
+alias flag 	S12;
+alias calcred S13;
 
 if(syscallno==8) then
 	//fork
-	
-	
 	//find a free pcb
 	
 	counter=0;
@@ -28,7 +28,6 @@ if(syscallno==8) then
 		endif;	
 		counter=counter+1;
 	endwhile;
-
 	if(counter==32) then
 		print "PCB Full";
 		[physicalSP-2]=-1;
@@ -37,73 +36,96 @@ if(syscallno==8) then
 	//set the childpid to counter controversial but no other option
 	
 	childPID= counter;
-	[READY_LIST+32*counter]=childPCB;
+	[READY_LIST+32*counter]=childPID;
 	
-	//check if memlist has enough pages for child process
+	//check if memlist has a page for stack
 				
+	count=70; //some rand num
 	counter=0;
-	count=0;
-	while(counter<4) do
-		if([PTBR+2*counter]!=-1) then
-			count=count+1;
+	while(counter<64) do
+		if([MEM_LIST+counter]==0) then
+			count=counter;
+			break;
 		endif;
 		counter=counter+1;
 	endwhile;
-	counter=0;
-	count2=0;
-	while(counter<64) do
-		if([MEM_LIST+counter]==0) then
-			count2=count2+1;
-		endif;
-		counter=counter+1;
-	endwhile;		
-	if(count2<count) then
-		print "~ MEM_LIST";
-		[physicalSP-1]=-1;
-		ireturn;
-	endif;
-	
-	
-	
-	//allocate equal number of mem blocks to child process
-	
-	childPTBR=1024+8*childPID;
-	count2=0;		 		
-	counter=0;
-	enter=0;
-	while(counter<4) do
-		if([PTBR+2*counter]!=-1) then
+	//if no place for stack use page replacement		
+	if(count==70) then
+		print "~MEM stack fixed";
+		counter=curPID;
+		flag=0;
+		while(1) do
 			count=0;
-			enter=enter+1;
-			while(count<64) do
-				if([MEM_LIST+count]==0) then
+			while(count<3) do
+				calcred=[1024+counter*8+2*count];	
+				if(calcred!=-1&&[1024+counter*8+2*count+1]=="01"&&[MEM_LIST+calcred]==1) then
+					load(6,20);
+					count2=448;
+					while(count2<512) do
+						if([DISK_LIST+count2]==0) then
+							break;
+						endif;
+						count2=count2+1;
+					endwhile;
+					if(count2==512) then
+						print "~SWAP";
+						inline "JMP 11842";
+					endif;		
+					store(calcred,count2);
+					[DISK_LIST+count2]=[DISK_LIST+count2]+1;
+					[1024+counter*8+2*count]=count2;
+					[1024+counter*8+2*count+1]="00";
+					freepage=calcred;
+					flag=1;
+					store(6,20);
 					break;
+				endif;
+				if(calcred!=-1&&[1024+counter*8+2*count+1]=="11"&&[MEM_LIST+calcred]==1) then
+					[1024+counter*8+2*count+1]="01";
 				endif;
 				count=count+1;
 			endwhile;
-			[childPTBR+2*count2]=count;
-			[childPTBR+2*count2+1]="01";
-			[MEM_LIST+count]=1;
-			count2=count2+1;
+			if(flag==1) then
+				break;
+			endif;
+			counter=counter+1;
+			counter=counter%32;
+		endwhile;
+		count=freepage;
+	endif;
+	
+	[MEM_LIST+count]=1;
+	
+	//copy stack parent to child
+	counter=0;
+	while(counter<512) do
+		[count*512+counter]=[[PTBR+6]*512+counter];
+		counter=counter+1;
+	endwhile;
+	//print "new child pid";
+	//print freepage;
+	childPTBR=1024+8*childPID;
+	[childPTBR+6]=count;
+	[childPTBR+7]="01";
+	load(6,20); //load the disk free list
+	
+	//updating the childPTBR
+	counter=0;
+	while(counter<3) do
+		[childPTBR+2*counter]=[PTBR+2*counter];
+		[childPTBR+2*counter+1]=[PTBR+2*counter+1];
+		if([PTBR+2*counter]!=-1) then
+			if([PTBR+2*counter+1]=="01" || [PTBR+2*counter+1]=="11") then
+				[MEM_LIST+[PTBR+2*counter]]=[MEM_LIST+[PTBR+2*counter]]+1;
+			endif;
+			if([PTBR+2*counter]>=448&&([PTBR+2*counter+1]=="00" || [PTBR+2*counter+1]=="10")) then	
+				[DISK_LIST+[PTBR+2*counter]]=[DISK_LIST+[PTBR+2*counter]]+1;
+			endif;	
 		endif;
 		counter=counter+1;
 	endwhile;
-	
-	//copy all the contents of the parent process mem blocks to child process  mem blocks
-	
-	count=0;
-	while(enter>0) do
-		if([PTBR+2*count]!=-1) then
-			counter=0;
-			while(counter<512) do
-				[[childPTBR+count*2]*512+counter]=[[PTBR+count*2]*512+counter];
-			counter=counter+1;	
-			endwhile;				
-			enter=enter-1;
-		endif; 
-		count=count+1;
-	endwhile;					
-	
+	store(6,20); 
+					
 	//setting up the pcb for child process
 	
 	childPCB=READY_LIST+32*childPID;
@@ -126,10 +148,13 @@ if(syscallno==8) then
 		count=[curPCB+counter];
 		[childPCB+counter]=count;
 		[childPCB+counter+1]=[curPCB+counter+1];
-		[FILE_TABLE+count+1]=[FILE_TABLE+count+1]+1;
+		if(count!=-1) then
+			[FILE_TABLE+count+1]=[FILE_TABLE+count+1]+1;
+		endif;	
 		counter=counter+2;
 	endwhile;
-	
+	// important note: here the the pointer to system wide open file table consists of the crct value of entry(range:0 - 127) in steps of 2 so no need to multiply by 2 
+	// same is applicable to the fat index spread out over(range:0-512) in steps of 8
 	[childPCB+31]=curPID;
 	
 	[physicalSP-2]=childPID;
@@ -137,6 +162,7 @@ if(syscallno==8) then
 	//get the block no of child stack from childPTBR
 	[count*512+SP%512-2]=-2;	
 	[READY_LIST+childPID*32+1]=1;
+
 	print "fork succ";
 	breakpoint;
 	ireturn;

@@ -20,7 +20,7 @@ endif;
 //print "exception";
 if([PTBR+2*vpagenum]==-1) then
 	print "invalid addr";
-	inline "JMP 11842"; //jump to exit
+	inline "JMP 11842";
 endif;
 
 counter=0;
